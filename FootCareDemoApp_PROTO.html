@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Footcare Practice Manager</title>
+
+  <!-- React + Babel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* Safe icon substitute */
+const Icon = ({ label }) => (
+  <span className="inline-block w-6 text-center mr-2">{label}</span>
+);
+
+function FootcarePracticeManager() {
+  const [customers, setCustomers] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [activeView, setActiveView] = useState('customers');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editForm, setEditForm] = useState(null);
+
+  useEffect(() => {
+    const savedCustomers = localStorage.getItem('footcare-customers');
+    const savedAppointments = localStorage.getItem('footcare-appointments');
+    if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
+    if (savedAppointments) setAppointments(JSON.parse(savedAppointments));
+  }, []);
+
+  const saveCustomers = (data) => {
+    setCustomers(data);
+    localStorage.setItem('footcare-customers', JSON.stringify(data));
+  };
+
+  const handleAddCustomer = () => {
+    setEditForm({
+      id: Date.now().toString(),
+      firstName: '',
+      lastName: '',
+      dateOfBirth: '',
+      phone: '',
+      email: '',
+      address: '',
+      city: '',
+      postcode: '',
+      medicalConditions: '',
+      medications: '',
+      allergies: '',
+      mobilityIssues: '',
+      notes: '',
+      emergencyContact: '',
+      emergencyPhone: ''
+    });
+    setIsEditing(true);
+    setSelectedCustomer(null);
+  };
+
+  const handleSaveCustomer = () => {
+    if (!editForm.firstName || !editForm.lastName) {
+      alert('Please enter first and last name');
+      return;
+    }
+    const updated = selectedCustomer
+      ? customers.map(c => c.id === editForm.id ? editForm : c)
+      : [...customers, editForm];
+
+    saveCustomers(updated);
+    setSelectedCustomer(editForm);
+    setIsEditing(false);
+  };
+
+  const filteredCustomers = customers.filter(c =>
+    (c.firstName + ' ' + c.lastName).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h1 className="text-3xl font-bold">
+            <Icon label="🏥" /> Footcare Practice Manager
+          </h1>
+          <p className="text-gray-600">Home Visit Patient Management System</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Customer List */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between mb-4">
+              <h2 className="text-xl font-bold">
+                <Icon label="👥" /> Customers
+              </h2>
+              <button
+                onClick={handleAddCustomer}
+                className="bg-indigo-600 text-white px-3 py-1 rounded"
+              >
+                <Icon label="➕" /> Add
+              </button>
+            </div>
+
+            <input
+              className="w-full border p-2 mb-4"
+              placeholder="Search customers..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {filteredCustomers.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => {
+                    setSelectedCustomer(c);
+                    setIsEditing(false);
+                  }}
+                  className="border p-2 cursor-pointer hover:bg-gray-50"
+                >
+                  <strong>{c.firstName} {c.lastName}</strong>
+                  <div className="text-sm text-gray-500">{c.city} {c.postcode}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Detail Pane */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+            {!selectedCustomer && !isEditing && (
+              <p className="text-gray-500 text-center">
+                Select a customer or add a new one
+              </p>
+            )}
+
+            {isEditing && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">
+                  <Icon label="✏️" /> {selectedCustomer ? 'Edit Customer' : 'New Customer'}
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input placeholder="First name *" className="border p-2"
+                    value={editForm.firstName}
+                    onChange={e => setEditForm({ ...editForm, firstName: e.target.value })}
+                  />
+                  <input placeholder="Last name *" className="border p-2"
+                    value={editForm.lastName}
+                    onChange={e => setEditForm({ ...editForm, lastName: e.target.value })}
+                  />
+                  <input type="date" className="border p-2"
+                    value={editForm.dateOfBirth}
+                    onChange={e => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+                  />
+                  <input placeholder="Phone" className="border p-2"
+                    value={editForm.phone}
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                  />
+                  <input placeholder="Email" className="border p-2 col-span-2"
+                    value={editForm.email}
+                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                  />
+                </div>
+
+                <h3 className="font-semibold"><Icon label="📍" /> Address</h3>
+                <input placeholder="Street" className="border p-2 w-full"
+                  value={editForm.address}
+                  onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <input placeholder="City" className="border p-2"
+                    value={editForm.city}
+                    onChange={e => setEditForm({ ...editForm, city: e.target.value })}
+                  />
+                  <input placeholder="Postcode" className="border p-2"
+                    value={editForm.postcode}
+                    onChange={e => setEditForm({ ...editForm, postcode: e.target.value })}
+                  />
+                </div>
+
+                <h3 className="font-semibold"><Icon label="⚠️" /> Medical Information</h3>
+                <textarea placeholder="Medical conditions" className="border p-2 w-full"
+                  value={editForm.medicalConditions}
+                  onChange={e => setEditForm({ ...editForm, medicalConditions: e.target.value })}
+                />
+                <textarea placeholder="Medications" className="border p-2 w-full"
+                  value={editForm.medications}
+                  onChange={e => setEditForm({ ...editForm, medications: e.target.value })}
+                />
+                <textarea placeholder="Allergies" className="border p-2 w-full"
+                  value={editForm.allergies}
+                  onChange={e => setEditForm({ ...editForm, allergies: e.target.value })}
+                />
+                <textarea placeholder="Mobility issues" className="border p-2 w-full"
+                  value={editForm.mobilityIssues}
+                  onChange={e => setEditForm({ ...editForm, mobilityIssues: e.target.value })}
+                />
+
+                <h3 className="font-semibold"><Icon label="☎️" /> Emergency Contact</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <input placeholder="Contact name" className="border p-2"
+                    value={editForm.emergencyContact}
+                    onChange={e => setEditForm({ ...editForm, emergencyContact: e.target.value })}
+                  />
+                  <input placeholder="Contact phone" className="border p-2"
+                    value={editForm.emergencyPhone}
+                    onChange={e => setEditForm({ ...editForm, emergencyPhone: e.target.value })}
+                  />
+                </div>
+
+                <textarea placeholder="Additional notes" className="border p-2 w-full"
+                  value={editForm.notes}
+                  onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                />
+
+                <button
+                  onClick={handleSaveCustomer}
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  <Icon label="💾" /> Save Customer
+                </button>
+              </div>
+            )}
+
+            {selectedCustomer && !isEditing && (
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold">
+                  <Icon label="👤" /> {selectedCustomer.firstName} {selectedCustomer.lastName}
+                </h2>
+                <p><Icon label="📞" /> {selectedCustomer.phone}</p>
+                <p><Icon label="📧" /> {selectedCustomer.email}</p>
+                <p><Icon label="🏠" /> {selectedCustomer.address}, {selectedCustomer.city}</p>
+
+                <div className="bg-red-50 p-4 rounded">
+                  <strong>Medical</strong>
+                  <p>{selectedCustomer.medicalConditions}</p>
+                  <p>{selectedCustomer.medications}</p>
+                  <p>{selectedCustomer.allergies}</p>
+                  <p>{selectedCustomer.mobilityIssues}</p>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded">
+                  <strong>Emergency</strong>
+                  <p>{selectedCustomer.emergencyContact} – {selectedCustomer.emergencyPhone}</p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded">
+                  <strong>Notes</strong>
+                  <p>{selectedCustomer.notes}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<FootcarePracticeManager />);
+</script>
+</body>
+</html>
